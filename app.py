@@ -142,6 +142,9 @@ if "welfare_schedule" not in st.session_state:
 if "feedback_submissions" not in st.session_state:
     st.session_state.feedback_submissions = pd.DataFrame(columns=["Rider", "Pony", "Rating", "Comments", "Date"])
 
+if "selected_activity_preset" not in st.session_state:
+    st.session_state.selected_activity_preset = "Shotover Advanced Hack 🌲"
+
 if "dashboard_view" not in st.session_state:
     st.session_state.dashboard_view = "All Bookings"
 
@@ -401,6 +404,10 @@ def page_client_portal():
                     <p>Explore the stunning trails around Shotover Country Park from our Sandy Lane yard (OX33). Designed for enjoyable hacks through varied terrain.</p>
                 </div>
             """, unsafe_allow_html=True)
+            if st.button("✨ Book Shotover Hack", use_container_width=True):
+                st.session_state.selected_activity_preset = "Shotover Advanced Hack 🌲"
+                st.rerun()
+                
         with col_c2:
             st.markdown("""
                 <div class="activity-card">
@@ -408,6 +415,9 @@ def page_client_portal():
                     <p>Based at Huckleberry Farm (OX5). Refine your riding skills, build partnership, or enjoy restorative time with our seasoned cobs.</p>
                 </div>
             """, unsafe_allow_html=True)
+            if st.button("✨ Book Adult Flatwork", use_container_width=True):
+                st.session_state.selected_activity_preset = "Adult Private Flatwork ⭐"
+                st.rerun()
             
         st.markdown("---")
         
@@ -420,7 +430,13 @@ def page_client_portal():
                 c_weight = st.number_input("Rider Weight (kg) [For safe equine weight matching]", min_value=30, max_value=110, value=65)
             with f_col2:
                 c_location = st.selectbox("Choose Yard Location", ["Huckleberry Farm (Heathfield, OX5)", "Sandy Lane (Horspath, OX33)"])
-                c_activity = st.selectbox("Choose Activity", ["Shotover Advanced Hack 🌲", "Adult Private Flatwork ⭐", "Ride & Groom Session 🐴", "Pony Therapy & Play 🐾"])
+                
+                activities_list = ["Shotover Advanced Hack 🌲", "Adult Private Flatwork ⭐", "Ride & Groom Session 🐴", "Pony Therapy & Play 🐾"]
+                default_idx = 0
+                if st.session_state.selected_activity_preset in activities_list:
+                    default_idx = activities_list.index(st.session_state.selected_activity_preset)
+                
+                c_activity = st.selectbox("Choose Activity", activities_list, index=default_idx)
                 c_date = st.date_input("Select Date")
                 c_time = st.selectbox("Select Time Slot", ["10:00 AM", "11:30 AM", "1:00 PM", "2:30 PM", "4:00 PM"])
             
