@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-import altair as alt
+import datetime
 
 # --- PAGE CONFIGURATION ---
 st.set_page_config(
@@ -26,9 +26,9 @@ st.markdown("""
 # --- INITIALIZE SESSION STATE ---
 if "bookings" not in st.session_state:
     st.session_state.bookings = pd.DataFrame([
-        {"Location": "Huckleberry Farm (Heathfield)", "Date": "2026-04-02", "Time": "10:00 AM", "Activity": "Ride & Groom Session", "Details": "Teddy (Rider: Leo M.)"},
-        {"Location": "Huckleberry Farm (Heathfield)", "Date": "2026-04-02", "Time": "1:00 PM", "Activity": "Pony Therapy Provision", "Details": "Jubilee (Rider: Chloe S.)"},
-        {"Location": "Sandy Lane (Horspath)", "Date": "2026-04-03", "Time": "2:30 PM", "Activity": "Shotover Woodland Hack", "Details": "Spice (Rider: The Harrison Family)"}
+        {"Location": "Huckleberry Farm (Heathfield)", "Date": "2026-04-02", "Time": "10:00 AM", "Activity": "Ride & Groom Session", "Details": "Teddy (Rider: Leo M.)", "Status": "Confirmed"},
+        {"Location": "Huckleberry Farm (Heathfield)", "Date": "2026-04-02", "Time": "1:00 PM", "Activity": "Pony Therapy Provision", "Details": "Jubilee (Rider: Chloe S.)", "Status": "Confirmed"},
+        {"Location": "Sandy Lane (Horspath)", "Date": "2026-04-03", "Time": "2:30 PM", "Activity": "Shotover Woodland Hack", "Details": "Spice (Rider: The Harrison Family)", "Status": "Confirmed"}
     ])
 
 if "ponies" not in st.session_state:
@@ -42,16 +42,19 @@ if "ponies" not in st.session_state:
         {"Pony": "Sam", "Breed": "Shetland", "Current_Yard": "Huckleberry Farm", "Max_Weight_kg": 25, "Status": "Retired (⚪)", "Notes": "Elder statesman in well-earned retirement"}
     ])
 
+if "clients" not in st.session_state:
+    st.session_state.clients = pd.DataFrame([
+        {"Client": "The Harrison Family", "Riders": 3, "Credits_Remaining": 4, "Email": "harrison@example.com", "Medical_Notes": "None declared"},
+        {"Client": "Sarah Jenkins", "Riders": 1, "Credits_Remaining": 2, "Email": "sarah@example.com", "Medical_Notes": "Mild allergy to stable dust"}
+    ])
+
+if "waitlist" not in st.session_state:
+    st.session_state.waitlist = pd.DataFrame(columns=["Client_Name", "Date", "Time", "Activity", "Weight_kg", "Requested_At"])
+
 if "provisions" not in st.session_state:
     st.session_state.provisions = pd.DataFrame([
         {"Student": "Leo M.", "School/Agency": "Oxfordshire Alternative Ed", "Program": "Work-Based Horse Care (Level 1)", "Hours_Logged": 12, "Target_Hours": 30},
         {"Student": "Chloe S.", "School/Agency": "Cherwell SEN Provision", "Program": "Pony Therapy & Groundwork", "Hours_Logged": 8, "Target_Hours": 15}
-    ])
-
-if "clients" not in st.session_state:
-    st.session_state.clients = pd.DataFrame([
-        {"Client": "The Harrison Family", "Riders": 3, "Credits_Remaining": 4, "Email": "harrison@example.com"},
-        {"Client": "Sarah Jenkins", "Riders": 1, "Credits_Remaining": 2, "Email": "sarah@example.com"}
     ])
 
 if "welfare_schedule" not in st.session_state:
@@ -61,11 +64,11 @@ if "welfare_schedule" not in st.session_state:
         {"Pony": "Spice", "Event": "Vaccination Booster", "Due_Date": "2026-05-01", "Status": "Booked"}
     ])
 
-# --- HELPER FUNCTION: CHECK PONY CONFLICTS ---
+# --- HELPER FUNCTIONS ---
 def is_pony_booked(pony_name, date_str, time_str):
     """Checks if a given pony is already booked on a specific date and time slot."""
     for _, row in st.session_state.bookings.iterrows():
-        if row['Date'] == date_str and row['Time'] == time_str:
+        if row['Date'] == date_str and row['Time'] == time_str and row['Status'] == "Confirmed":
             if pony_name.lower() in str(row['Details']).lower():
                 return True
     return False
@@ -73,22 +76,25 @@ def is_pony_booked(pony_name, date_str, time_str):
 # --- DEFINE PAGE FUNCTIONS ---
 def page_dashboard():
     st.title("Welcome back, Charlotte!")
-    st.caption("5-Star Licensed Centre Management • Powered by Saddle")
+    st.caption("5-Star Licensed Centre Management • Powered by EC-Pro Integration Engine")
     st.divider()
     
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
     with col1:
-        huck_count = len(st.session_state.bookings[st.session_state.bookings['Location'].str.contains('Huckleberry')])
-        st.metric(label="Huckleberry Farm Sessions", value=f"{huck_count} Booked", delta="Today")
+        huck_count = len(st.session_state.bookings[(st.session_state.bookings['Location'].str.contains('Huckleberry')) & (st.session_state.bookings['Status'] == 'Confirmed')])
+        st.metric(label="Huckleberry Farm Bookings", value=f"{huck_count}", delta="Active")
     with col2:
-        sandy_count = len(st.session_state.bookings[st.session_state.bookings['Location'].str.contains('Sandy Lane')])
-        st.metric(label="Sandy Lane / Shotover Hacks", value=f"{sandy_count} Booked", delta="Today")
+        sandy_count = len(st.session_state.bookings[(st.session_state.bookings['Location'].str.contains('Sandy Lane')) & (st.session_state.bookings['Status'] == 'Confirmed')])
+        st.metric(label="Sandy Lane / Shotover Hacks", value=f"{sandy_count}", delta="Active")
     with col3:
+        wait_count = len(st.session_state.waitlist)
+        st.metric(label="Waiting List Queue", value=f"{wait_count} Riders", delta="Action Required" if wait_count > 0 else "All Clear")
+    with col4:
         working_ponies = len(st.session_state.ponies[~st.session_state.ponies['Status'].str.contains('Retired')])
-        st.metric(label="Working Herd Health", value=f"{working_ponies} / {working_ponies}", delta="100% Fit")
+        st.metric(label="Working Herd Fleet", value=f"{working_ponies} Mounted", delta="100% Fit")
 
 def page_schedule():
-    st.subheader("Master Events & Booking Schedule")
+    st.subheader("Master Events & Booking Schedule (EC-Pro View)")
     location_filter = st.radio("Filter Yard Location:", ["All Locations", "Huckleberry Farm (Heathfield)", "Sandy Lane (Horspath)"], horizontal=True)
     st.markdown("---")
     df_b = st.session_state.bookings
@@ -96,32 +102,36 @@ def page_schedule():
         df_b = df_b[df_b['Location'] == location_filter]
     st.dataframe(df_b, use_container_width=True)
 
-    with st.expander("➕ Create New Admin Event / Booking (With Anti-Double Booking Validation)"):
+    with st.expander("➕ Create Admin Event / Override Booking"):
         with st.form("admin_event_form"):
             e_loc = st.selectbox("Location", ["Huckleberry Farm (Heathfield)", "Sandy Lane (Horspath)"])
             e_date = st.date_input("Event Date")
             e_time = st.selectbox("Time Slot", ["10:00 AM", "11:30 AM", "1:00 PM", "2:30 PM", "4:00 PM"])
-            e_act = st.selectbox("Activity", ["Woodland Hack", "Ride & Groom", "Pony Therapy", "Private Lesson"])
+            e_act = st.selectbox("Activity", ["Shotover Woodland Hack", "Ride & Groom Session", "Pony Therapy Provision", "Private Lesson"])
             
             active_ponies = st.session_state.ponies[~st.session_state.ponies['Status'].str.contains('Retired')]['Pony'].tolist()
             e_pony = st.selectbox("Assign Specific Pony", active_ponies)
             e_rider = st.text_input("Rider / Participant Name")
             
-            submitted = st.form_submit_button("Publish Event")
+            submitted = st.form_submit_button("Publish Confirmed Booking")
             if submitted:
                 date_str = e_date.strftime("%Y-%m-%d")
                 if is_pony_booked(e_pony, date_str, e_time):
-                    st.error(f"❌ Double-booking conflict: **{e_pony}** is already booked for a session on {date_str} at {e_time}. Choose another time or pony.")
+                    st.error(f"❌ Conflict: **{e_pony}** is already booked for this time slot.")
                 else:
-                    details_str = f"{e_pony} (Rider: {e_rider if e_rider else 'General Event'})"
-                    new_evt = pd.DataFrame([{"Location": e_loc, "Date": date_str, "Time": e_time, "Activity": e_act, "Details": details_str}])
+                    details_str = f"{e_pony} (Rider: {e_rider if e_rider else 'Admin Booking'})"
+                    new_evt = pd.DataFrame([{"Location": e_loc, "Date": date_str, "Time": e_time, "Activity": e_act, "Details": details_str, "Status": "Confirmed"}])
                     st.session_state.bookings = pd.concat([st.session_state.bookings, new_evt], ignore_index=True)
-                    st.success(f"✅ Event added successfully! **{e_pony}** scheduled securely without conflicts.")
+                    st.success(f"✅ Booking added securely for **{e_pony}**.")
                     st.rerun()
+
+    if not st.session_state.waitlist.empty:
+        st.markdown("### 🕒 Active Waiting List Requests")
+        st.dataframe(st.session_state.waitlist, use_container_width=True)
 
 def page_ponies():
     st.subheader("Complete Herd Rota & Profile Editor")
-    st.write("Manage stable allocations, breed info, weight limits, and active status for the entire Pony Pursuits herd.")
+    st.write("Manage stable allocations, breed info, weight limits, and Cherwell 5-star license tracking status.")
     st.dataframe(st.session_state.ponies, use_container_width=True)
     
     col_a, col_b = st.columns(2)
@@ -136,16 +146,16 @@ def page_ponies():
                 st.rerun()
     with col_b:
         with st.form("add_pony_form"):
-            st.markdown("#### Add New Pony to Herd")
+            st.markdown("#### Register New Pony")
             new_p_name = st.text_input("Pony Name")
             new_p_breed = st.text_input("Breed", "Cob Cross")
             new_p_weight = st.number_input("Max Weight Limit (kg)", value=70)
             new_p_yard = st.selectbox("Initial Yard", ["Huckleberry Farm", "Sandy Lane / Shotover"])
-            if st.form_submit_button("Register New Pony"):
+            if st.form_submit_button("Save to Herd Register"):
                 if new_p_name:
                     new_row = pd.DataFrame([{
                         "Pony": new_p_name, "Breed": new_p_breed, "Current_Yard": new_p_yard, 
-                        "Max_Weight_kg": new_p_weight, "Status": "Active (🟢)", "Notes": "Newly added"
+                        "Max_Weight_kg": new_p_weight, "Status": "Active (🟢)", "Notes": "Newly added licensed mount"
                     }])
                     st.session_state.ponies = pd.concat([st.session_state.ponies, new_row], ignore_index=True)
                     st.success(f"Registered {new_p_name}!")
@@ -153,6 +163,7 @@ def page_ponies():
 
 def page_provisions():
     st.subheader("Alternative Provision & Student Hours Tracker")
+    st.write("Monitor local authority funded placements and educational qualification hours (e.g., Level 1 Work-Based Horse Care).")
     st.dataframe(st.session_state.provisions, use_container_width=True)
     with st.expander("➕ Log Student Hours / Add Placement"):
         with st.form("provision_form"):
@@ -172,7 +183,7 @@ def page_provisions():
 
 def page_welfare():
     st.subheader("Equine Welfare & Licensing Constraints")
-    st.write("Cherwell District Council 5-star license compliance monitoring rules.")
+    st.write("Cherwell District Council 5-star license compliance monitoring rules (Charlotte Marshall - License no: RID0010).")
     st.dataframe(st.session_state.ponies[['Pony', 'Breed', 'Max_Weight_kg', 'Status', 'Notes']], use_container_width=True)
 
 def page_vet():
@@ -191,38 +202,48 @@ def page_vet():
                 st.rerun()
 
 def page_clients():
-    st.subheader("👥 Client Database & Token Pack Management")
+    st.subheader("👥 EC-Pro Client & Token Pack Database")
     st.dataframe(st.session_state.clients, use_container_width=True)
     with st.expander("➕ Adjust Client Credit Packs / Tokens"):
         with st.form("token_form"):
             target_client = st.selectbox("Select Client", st.session_state.clients['Client'].tolist())
-            token_change = st.number_input("Tokens to Add (+) / Deduct (-)", min_value=-10, max_value=10, value=2)
+            token_change = st.number_input("Token Packs to Add (+) / Deduct (-)", min_value=-10, max_value=10, value=1)
             if st.form_submit_button("Update Token Ledger"):
                 current_tokens = int(st.session_state.clients.loc[st.session_state.clients['Client'] == target_client, 'Credits_Remaining'].values[0])
                 new_total = max(current_tokens + token_change, 0)
                 st.session_state.clients.loc[st.session_state.clients['Client'] == target_client, 'Credits_Remaining'] = new_total
-                st.success(f"Updated token balance for {target_client}. New balance: {new_total} tokens.")
+                st.success(f"Updated balance for {target_client}. New token pack total: {new_total}")
                 st.rerun()
 
 def page_client_portal():
-    st.markdown("### 🐎 Pony Pursuits | Client Portal")
-    st.title("Welcome to your Rider Dashboard!")
-    st.write("Book sessions with automated weight-matching and strict anti-double booking protection.")
+    st.markdown("### 🐎 Pony Pursuits | EC-Pro Online Booking Portal")
+    st.title("Welcome to your Client & Rider Hub")
+    st.write("Book pleasure rides, woodland hacks, or therapy sessions with automated weight verification and token deduction.")
     st.divider()
     
-    client_tab_book, client_tab_profile = st.tabs(["📅 Book with Safety Match", "👤 My Credits & Profile"])
+    client_tab_book, client_tab_waitlist, client_tab_profile = st.tabs(["📅 Book a Session", "⏳ Waiting List Queue", "👤 My Rider Profile & Tokens"])
+    
     with client_tab_book:
-        st.subheader("Frictionless Booking & Conflict Engine")
+        st.subheader("Frictionless Slot Booking & Safety Match Engine")
         with st.form("client_booking_form"):
-            c_name = st.text_input("Rider / Family Name")
-            c_weight = st.number_input("Rider Weight (kg)", min_value=20, max_value=110, value=55)
+            c_name = st.text_input("Rider / Account Name")
+            c_email = st.text_input("Account Email")
+            c_weight = st.number_input("Rider Weight (kg) [Safety Validation]", min_value=20, max_value=110, value=55)
             c_location = st.selectbox("Select Location", ["Huckleberry Farm (Heathfield)", "Sandy Lane (Horspath)"])
-            c_activity = st.selectbox("Select Activity", ["Shotover Woodland Hack", "Ride & Groom Session", "Pony Therapy Provision"])
+            c_activity = st.selectbox("Select Activity", ["Shotover Woodland Hack", "Ride & Groom Session", "Pony Therapy Provision", "Private Lesson"])
             c_date = st.date_input("Preferred Date")
             c_time = st.selectbox("Preferred Time Slot", ["10:00 AM", "11:30 AM", "1:00 PM", "2:30 PM", "4:00 PM"])
             
-            if st.form_submit_button("Submit Booking Request") and c_name:
+            if st.form_submit_button("Request Booking & Deduct Token") and c_name:
                 date_str = c_date.strftime("%Y-%m-%d")
+                
+                # Check client token balance if profile exists
+                client_row = st.session_state.clients[st.session_state.clients['Client'].str.contains(c_name, case=False, na=False)]
+                if not client_row.empty:
+                    tokens_left = int(client_row['Credits_Remaining'].values[0])
+                    if tokens_left <= 0:
+                        st.error("❌ Insufficient token pack balance. Please top up your credits before booking.")
+                        return
                 
                 # Filter active working ponies meeting weight requirement
                 active_herd = st.session_state.ponies[~st.session_state.ponies['Status'].str.contains('Retired')]
@@ -235,30 +256,51 @@ def page_client_portal():
                         available_ponies.append(p_row['Pony'])
                 
                 if weight_matched.empty:
-                    st.error("❌ Weight check error: No available working ponies match this weight specification safely.")
+                    st.error("❌ Safety match restriction: No working ponies meet this weight requirement safely.")
                 elif not available_ponies:
-                    st.error(f"❌ Schedule conflict: All suitable weight-matched ponies are already booked for {date_str} at {c_time}. Please select an alternative time slot.")
+                    # Offer EC-Pro style waitlist addition when fully booked
+                    st.warning("⚠️ All suitable weight-matched ponies are fully booked for this exact slot. Would you like to join the automated waiting list?")
+                    # Log to waitlist session state
+                    new_wait = pd.DataFrame([{"Client_Name": c_name, "Date": date_str, "Time": c_time, "Activity": c_activity, "Weight_kg": c_weight, "Requested_At": str(datetime.date.today())}])
+                    st.session_state.waitlist = pd.concat([st.session_state.waitlist, new_wait], ignore_index=True)
+                    st.info("📋 You have been successfully added to the waiting list queue. We will notify you if a slot opens up!")
                 else:
-                    # Automatically assign the first available conflict-free pony
+                    # Automatically assign first available conflict-free pony
                     assigned_pony = available_ponies[0]
                     new_booking = pd.DataFrame([{
                         "Location": c_location, "Date": date_str,
-                        "Time": c_time, "Activity": c_activity, "Details": f"{assigned_pony} (Rider: {c_name})"
+                        "Time": c_time, "Activity": c_activity, "Details": f"{assigned_pony} (Rider: {c_name})", "Status": "Confirmed"
                     }])
                     st.session_state.bookings = pd.concat([st.session_state.bookings, new_booking], ignore_index=True)
-                    st.success(f"✅ Success, {c_name}! Booked into {c_activity}. Matched with resting, safe mount: **{assigned_pony}**.")
+                    
+                    # Deduct token if client profile matched
+                    if not client_row.empty:
+                        idx = client_row.index[0]
+                        st.session_state.clients.loc[idx, 'Credits_Remaining'] -= 1
+                    
+                    st.success(f"✅ Booking Confirmed, {c_name}! Matched safely with resting mount: **{assigned_pony}**. 1 token pack credit deducted.")
+
+    with client_tab_waitlist:
+        st.subheader("Your Active Waiting List Submissions")
+        st.write("If sessions are fully booked, tracking via the queue ensures priority allocation when cancellations occur.")
+        if st.session_state.waitlist.empty:
+            st.info("You have no pending waiting list requests.")
+        else:
+            st.dataframe(st.session_state.waitlist, use_container_width=True)
 
     with client_tab_profile:
-        st.subheader("Your Account & Token Pack Balance")
-        lookup_email = st.text_input("Enter your account email:")
+        st.subheader("Rider Account Profile & Token Packs")
+        lookup_email = st.text_input("Verify via Account Email:")
         if lookup_email:
             match = st.session_state.clients[st.session_state.clients['Email'].str.contains(lookup_email, case=False, na=False)]
             if not match.empty:
                 for _, row in match.iterrows():
-                    st.success(f"Account Profile: {row['Client']}")
-                    st.metric(label="Active Session Token Pack Balance", value=f"{row['Credits_Remaining']} Tokens")
+                    st.success(f"Account Profile Located: {row['Client']}")
+                    st.metric(label="Available Token Pack Credits", value=f"{row['Credits_Remaining']} Tokens")
+                    st.write(f"**Registered Riders:** {row['Riders']}")
+                    st.write(f"**Medical Notes / Info:** {row['Medical_Notes']}")
             else:
-                st.warning("No client profile located with that email address.")
+                st.warning("No client profile located matching that email address.")
 
 # --- NATIVE STREAMLIT NAVIGATION ---
 admin_pages = [
