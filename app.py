@@ -148,6 +148,9 @@ if "selected_activity_preset" not in st.session_state:
 if "dashboard_view" not in st.session_state:
     st.session_state.dashboard_view = "All Bookings"
 
+if "latest_booking_confirmation" not in st.session_state:
+    st.session_state.latest_booking_confirmation = None
+
 # --- HELPER FUNCTIONS ---
 def is_pony_booked(pony_name, date_str, time_str):
     for _, row in st.session_state.bookings.iterrows():
@@ -396,6 +399,51 @@ def page_client_portal():
         </div>
     """, unsafe_allow_html=True)
     
+    # Check if we have a recent confirmation to display
+    if st.session_state.latest_booking_confirmation:
+        conf = st.session_state.latest_booking_confirmation
+        st.markdown("""
+            <div style="background: #EAF4EE; padding: 30px; border-radius: 20px; border: 2px solid #2C4A3E; text-align: center; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.05);">
+                <h2 style="color: #2C4A3E; margin-top: 0; font-family: 'Playfair Display', serif;">🎉 Booking Confirmed Successfully!</h2>
+                <p style="font-size: 1.05rem; color: #333;">Thank you, <b>{rider}</b>. Your experience has been securely reserved and your mount is ready.</p>
+            </div>
+        """.format(rider=conf['rider']), unsafe_allow_html=True)
+        
+        col_c_img, col_c_info = st.columns([1, 2])
+        pony_name = conf['pony']
+        img_path = get_pony_image_path(pony_name)
+        map_link = get_yard_map_link(conf['location'])
+        
+        with col_c_img:
+            if img_path:
+                st.image(img_path, use_container_width=True)
+            else:
+                st.markdown("""
+                    <div style="background-color: #E2E8F0; padding: 60px 10px; border-radius: 12px; text-align: center; color: #718096; font-size: 0.85rem; border: 1px dashed #CBD5E1;">
+                        🐎 Matched Mount
+                    </div>
+                """, unsafe_allow_html=True)
+                
+        with col_c_info:
+            st.markdown(f"""
+                <div style="background: white; padding: 24px; border-radius: 16px; border: 1px solid #EAEFE5; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
+                    <h3 style="margin-top:0; font-family: 'Playfair Display', serif; color: #2C4A3E;">✨ Matched Mount: {pony_name}</h3>
+                    <p style="margin: 6px 0;"><b>Activity:</b> {conf['activity']}</p>
+                    <p style="margin: 6px 0;"><b>Location / Yard:</b> {conf['location']}</p>
+                    <p style="margin: 6px 0;"><b>Date & Time:</b> {conf['date']} at {conf['time']}</p>
+                    <p style="margin: 6px 0;"><b>Email Contact:</b> {conf['email']}</p>
+                    <div style="margin-top: 18px;">
+                        <a href="{map_link}" target="_blank" style="background-color: #2C4A3E; color: white; padding: 8px 16px; border-radius: 8px; text-decoration: none; font-size: 0.9rem; font-weight: 500; display: inline-block;">📍 Open Yard in Google Maps</a>
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
+            
+        st.markdown("")
+        if st.button("✨ Make Another Booking or Return", use_container_width=True):
+            st.session_state.latest_booking_confirmation = None
+            st.rerun()
+        return
+
     client_tab_book, client_tab_feedback, client_tab_herd, client_tab_waitlist, client_tab_profile = st.tabs([
         "✨ Book an Experience", 
         "🌟 Ride & Feedback",
@@ -456,11 +504,11 @@ def page_client_portal():
             submit_booking = st.form_submit_button("Confirm Booking & Allocate Mount", use_container_width=True)
             
             if submit_booking:
-                # Form Validation Checks
+                # Validation check for required fields
                 if not c_name or not c_name.strip():
-                    st.error("⚠️ Please enter a valid Rider / Family Name.")
+                    st.error("⚠️ Please provide a valid Rider / Family Name.")
                 elif not c_email or not c_email.strip() or "@" not in c_email:
-                    st.error("⚠️ Please enter a valid Email Address containing '@'.")
+                    st.error("⚠️ Please provide a valid Email Address containing '@'.")
                 else:
                     date_str = c_date.strftime("%Y-%m-%d")
                     
@@ -496,10 +544,14 @@ def page_client_portal():
                                 idx = client_row.index[0]
                                 st.session_state.clients.loc[idx, 'Credits_Remaining'] -= 1
                                     
+                                # Save to confirmation state and rerun to show confirmation page
+                                st.session_state.latest_booking_confirmation = {
+                                    "rider": c_name, "email": c_email, "pony": assigned_pony,
+                                    "location": c_location, "activity": c_activity, "date": date_str, "time": c_time
+                                }
                                 st.balloons()
-                                st.success(f"✨ Booking confirmed! You have been successfully matched with: **{assigned_pony}**.")
+                                st.rerun()
                     else:
-                        # Allow booking even if client is not pre-registered in token ledger, or handle dynamically
                         active_herd = st.session_state.ponies[~st.session_state.ponies['Status'].str.contains('Retired|Memory')]
                         weight_matched = active_herd[active_herd['Max_Weight_kg'] >= c_weight]
                         
@@ -521,8 +573,13 @@ def page_client_portal():
                                 "Time": c_time, "Activity": c_activity, "Details": f"{assigned_pony} (Rider: {c_name})", "Status": "Confirmed"
                             }])
                             st.session_state.bookings = pd.concat([st.session_state.bookings, new_booking], ignore_index=True)
+                            
+                            st.session_state.latest_booking_confirmation = {
+                                "rider": c_name, "email": c_email, "pony": assigned_pony,
+                                "location": c_location, "activity": c_activity, "date": date_str, "time": c_time
+                            }
                             st.balloons()
-                            st.success(f"✨ Booking confirmed! You have been successfully matched with: **{assigned_pony}**.")
+                            st.rerun()
 
     with client_tab_feedback:
         st.subheader("🌟 Your Matched Rides & Memory Log")
