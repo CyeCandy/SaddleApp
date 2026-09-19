@@ -158,7 +158,19 @@ def is_pony_booked(pony_name, date_str, time_str):
 
 def get_pony_image_path(pony_name):
     clean_name = pony_name.strip()
-    for candidate in [f"{clean_name}.jpg", f"{clean_name.lower()}.jpg", f"{clean_name}.png", f"{clean_name.lower()}.png", f"{clean_name}.jpeg"]:
+    no_space_name = clean_name.replace(" ", "")
+    underscore_name = clean_name.replace(" ", "_")
+    
+    candidates = [
+        f"{clean_name}.jpg", f"{clean_name}.jpeg", f"{clean_name}.png",
+        f"{clean_name.lower()}.jpg", f"{clean_name.lower()}.jpeg", f"{clean_name.lower()}.png",
+        f"{no_space_name}.jpg", f"{no_space_name}.jpeg", f"{no_space_name}.png",
+        f"{no_space_name.lower()}.jpg", f"{no_space_name.lower()}.jpeg", f"{no_space_name.lower()}.png",
+        f"{underscore_name}.jpg", f"{underscore_name}.jpeg", f"{underscore_name}.png",
+        f"{underscore_name.lower()}.jpg", f"{underscore_name.lower()}.jpeg", f"{underscore_name.lower()}.png"
+    ]
+    
+    for candidate in candidates:
         if os.path.exists(candidate):
             return candidate
     return None
