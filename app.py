@@ -437,8 +437,8 @@ def page_client_portal():
             st.markdown("### 📝 Secure Booking Form")
             f_col1, f_col2 = st.columns(2)
             with f_col1:
-                c_name = st.text_input("Rider / Family Name")
-                c_email = st.text_input("Account Email Address")
+                c_name = st.text_input("Rider / Family Name *")
+                c_email = st.text_input("Account Email Address *")
                 c_weight = st.number_input("Rider Weight (kg) [For safe equine weight matching]", min_value=30, max_value=110, value=65)
             with f_col2:
                 c_location = st.selectbox("Choose Yard Location", ["Huckleberry Farm (Heathfield, OX5)", "Sandy Lane (Horspath, OX33)"])
@@ -455,45 +455,74 @@ def page_client_portal():
             st.markdown("")
             submit_booking = st.form_submit_button("Confirm Booking & Allocate Mount", use_container_width=True)
             
-            if submit_booking and c_name:
-                date_str = c_date.strftime("%Y-%m-%d")
-                
-                client_row = st.session_state.clients[st.session_state.clients['Client'].str.contains(c_name, case=False, na=False)]
-                if not client_row.empty:
-                    tokens_left = int(client_row['Credits_Remaining'].values[0])
-                    if tokens_left <= 0:
-                        st.error("⚠️ You have 0 token pack credits remaining. Please top up your package to book.")
-                        return
-                
-                active_herd = st.session_state.ponies[~st.session_state.ponies['Status'].str.contains('Retired|Memory')]
-                weight_matched = active_herd[active_herd['Max_Weight_kg'] >= c_weight]
-                
-                available_ponies = []
-                for _, p_row in weight_matched.iterrows():
-                    if not is_pony_booked(p_row['Pony'], date_str, c_time):
-                        available_ponies.append(p_row['Pony'])
-                
-                if weight_matched.empty:
-                    st.error("❌ We could not locate an active mount matching this weight requirement safely. Please contact the yard directly.")
-                elif not available_ponies:
-                    st.warning("⚠️ All suitable weight-matched mounts are currently reserved for this slot. Would you like to join our waiting list?")
-                    new_wait = pd.DataFrame([{"Client_Name": c_name, "Date": date_str, "Time": c_time, "Activity": c_activity, "Weight_kg": c_weight, "Requested_At": str(datetime.date.today())}])
-                    st.session_state.waitlist = pd.concat([st.session_state.waitlist, new_wait], ignore_index=True)
-                    st.info("📋 Added to the waiting list. We will notify you promptly if a space opens.")
+            if submit_booking:
+                # Form Validation Checks
+                if not c_name or not c_name.strip():
+                    st.error("⚠️ Please enter a valid Rider / Family Name.")
+                elif not c_email or not c_email.strip() or "@" not in c_email:
+                    st.error("⚠️ Please enter a valid Email Address containing '@'.")
                 else:
-                    assigned_pony = available_ponies[0]
-                    new_booking = pd.DataFrame([{
-                        "Location": c_location, "Date": date_str,
-                        "Time": c_time, "Activity": c_activity, "Details": f"{assigned_pony} (Rider: {c_name})", "Status": "Confirmed"
-                    }])
-                    st.session_state.bookings = pd.concat([st.session_state.bookings, new_booking], ignore_index=True)
+                    date_str = c_date.strftime("%Y-%m-%d")
                     
+                    client_row = st.session_state.clients[st.session_state.clients['Client'].str.contains(c_name, case=False, na=False)]
                     if not client_row.empty:
-                        idx = client_row.index[0]
-                        st.session_state.clients.loc[idx, 'Credits_Remaining'] -= 1
+                        tokens_left = int(client_row['Credits_Remaining'].values[0])
+                        if tokens_left <= 0:
+                            st.error("⚠️ You have 0 token pack credits remaining. Please top up your package to book.")
+                        else:
+                            active_herd = st.session_state.ponies[~st.session_state.ponies['Status'].str.contains('Retired|Memory')]
+                            weight_matched = active_herd[active_herd['Max_Weight_kg'] >= c_weight]
+                            
+                            available_ponies = []
+                            for _, p_row in weight_matched.iterrows():
+                                if not is_pony_booked(p_row['Pony'], date_str, c_time):
+                                    available_ponies.append(p_row['Pony'])
+                            
+                            if weight_matched.empty:
+                                st.error("❌ We could not locate an active mount matching this weight requirement safely. Please contact the yard directly.")
+                            elif not available_ponies:
+                                st.warning("⚠️ All suitable weight-matched mounts are currently reserved for this slot. Would you like to join our waiting list?")
+                                new_wait = pd.DataFrame([{"Client_Name": c_name, "Date": date_str, "Time": c_time, "Activity": c_activity, "Weight_kg": c_weight, "Requested_At": str(datetime.date.today())}])
+                                st.session_state.waitlist = pd.concat([st.session_state.waitlist, new_wait], ignore_index=True)
+                                st.info("📋 Added to the waiting list. We will notify you promptly if a space opens.")
+                            else:
+                                assigned_pony = available_ponies[0]
+                                new_booking = pd.DataFrame([{
+                                    "Location": c_location, "Date": date_str,
+                                    "Time": c_time, "Activity": c_activity, "Details": f"{assigned_pony} (Rider: {c_name})", "Status": "Confirmed"
+                                }])
+                                st.session_state.bookings = pd.concat([st.session_state.bookings, new_booking], ignore_index=True)
+                                
+                                idx = client_row.index[0]
+                                st.session_state.clients.loc[idx, 'Credits_Remaining'] -= 1
+                                    
+                                st.balloons()
+                                st.success(f"✨ Booking confirmed! You have been successfully matched with: **{assigned_pony}**.")
+                    else:
+                        # Allow booking even if client is not pre-registered in token ledger, or handle dynamically
+                        active_herd = st.session_state.ponies[~st.session_state.ponies['Status'].str.contains('Retired|Memory')]
+                        weight_matched = active_herd[active_herd['Max_Weight_kg'] >= c_weight]
                         
-                    st.balloons()
-                    st.success(f"✨ Booking confirmed! You have been successfully matched with: **{assigned_pony}**.")
+                        available_ponies = []
+                        for _, p_row in weight_matched.iterrows():
+                            if not is_pony_booked(p_row['Pony'], date_str, c_time):
+                                available_ponies.append(p_row['Pony'])
+                                
+                        if weight_matched.empty:
+                            st.error("❌ We could not locate an active mount matching this weight requirement safely.")
+                        elif not available_ponies:
+                            st.warning("⚠️ All suitable weight-matched mounts are currently reserved for this slot. Added to waiting list.")
+                            new_wait = pd.DataFrame([{"Client_Name": c_name, "Date": date_str, "Time": c_time, "Activity": c_activity, "Weight_kg": c_weight, "Requested_At": str(datetime.date.today())}])
+                            st.session_state.waitlist = pd.concat([st.session_state.waitlist, new_wait], ignore_index=True)
+                        else:
+                            assigned_pony = available_ponies[0]
+                            new_booking = pd.DataFrame([{
+                                "Location": c_location, "Date": date_str,
+                                "Time": c_time, "Activity": c_activity, "Details": f"{assigned_pony} (Rider: {c_name})", "Status": "Confirmed"
+                            }])
+                            st.session_state.bookings = pd.concat([st.session_state.bookings, new_booking], ignore_index=True)
+                            st.balloons()
+                            st.success(f"✨ Booking confirmed! You have been successfully matched with: **{assigned_pony}**.")
 
     with client_tab_feedback:
         st.subheader("🌟 Your Matched Rides & Memory Log")
