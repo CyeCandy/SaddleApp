@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import datetime
+import os
 
 # --- PAGE CONFIGURATION ---
 st.set_page_config(
@@ -83,7 +84,6 @@ if "welfare_schedule" not in st.session_state:
         {"Pony": "Spice", "Event": "Vaccination Booster", "Due_Date": "2026-05-01", "Status": "Booked"}
     ])
 
-# Session state tracker for active dashboard filters
 if "dashboard_view" not in st.session_state:
     st.session_state.dashboard_view = "All Bookings"
 
@@ -94,6 +94,13 @@ def is_pony_booked(pony_name, date_str, time_str):
             if pony_name.lower() in str(row['Details']).lower():
                 return True
     return False
+
+def get_pony_image_path(pony_name):
+    clean_name = pony_name.strip()
+    for candidate in [f"{clean_name}.jpg", f"{clean_name.lower()}.jpg", f"{clean_name}.png", f"{clean_name.lower()}.png", f"{clean_name}.jpeg"]:
+        if os.path.exists(candidate):
+            return candidate
+    return None
 
 # --- DEFINE ADMIN PAGES ---
 def page_dashboard():
@@ -132,7 +139,6 @@ def page_dashboard():
 
     st.markdown("---")
     
-    # Dynamic view rendering based on user click
     if st.session_state.dashboard_view == "Huckleberry":
         col_head, col_btn = st.columns([4, 1])
         with col_head:
@@ -401,13 +407,27 @@ def page_client_portal():
         st.write("Get to know the lovely characters you or your children will meet at our yards:")
         
         for _, p in st.session_state.ponies.iterrows():
-            st.markdown(f"""
-                <div style="background: white; padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 4px solid #3498DB;">
-                    <h4>🐎 {p['Pony']} ({p['Breed']}) — <span style="font-size: 0.9rem; color: #555;">Based at {p['Current_Yard']}</span></h4>
-                    <p style="margin: 2px 0;"><b>Status:</b> {p['Status']} | <b>Weight Limit:</b> Up to {p['Max_Weight_kg']} kg</p>
-                    <p style="margin: 2px 0; color: #666;"><i>{p['Notes']}</i></p>
-                </div>
-            """, unsafe_allow_html=True)
+            col_img, col_info = st.columns([1, 3])
+            img_path = get_pony_image_path(p['Pony'])
+            
+            with col_img:
+                if img_path:
+                    st.image(img_path, use_container_width=True)
+                else:
+                    st.markdown("""
+                        <div style="background-color: #E2E8F0; padding: 30px 10px; border-radius: 8px; text-align: center; color: #718096; font-size: 0.85rem;">
+                            📷 No Photo Found
+                        </div>
+                    """, unsafe_allow_html=True)
+                    
+            with col_info:
+                st.markdown(f"""
+                    <div style="background: white; padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 4px solid #3498DB;">
+                        <h4>🐎 {p['Pony']} ({p['Breed']}) — <span style="font-size: 0.9rem; color: #555;">Based at {p['Current_Yard']}</span></h4>
+                        <p style="margin: 2px 0;"><b>Status:</b> {p['Status']} | <b>Weight Limit:</b> Up to {p['Max_Weight_kg']} kg</p>
+                        <p style="margin: 2px 0; color: #666;"><i>{p['Notes']}</i></p>
+                    </div>
+                """, unsafe_allow_html=True)
 
     with client_tab_waitlist:
         st.subheader("⏳ Your Waiting List Queue")
