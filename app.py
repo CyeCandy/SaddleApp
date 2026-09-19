@@ -139,6 +139,9 @@ if "welfare_schedule" not in st.session_state:
         {"Pony": "Spice", "Event": "Vaccination Booster", "Due_Date": "2026-05-01", "Status": "Booked"}
     ])
 
+if "feedback_submissions" not in st.session_state:
+    st.session_state.feedback_submissions = pd.DataFrame(columns=["Rider", "Pony", "Rating", "Comments", "Date"])
+
 if "dashboard_view" not in st.session_state:
     st.session_state.dashboard_view = "All Bookings"
 
@@ -156,6 +159,12 @@ def get_pony_image_path(pony_name):
         if os.path.exists(candidate):
             return candidate
     return None
+
+def get_yard_map_link(location_str):
+    if "Sandy Lane" in location_str:
+        return "https://maps.google.com/?q=Sandy+Lane+Horspath+Oxford+OX33"
+    else:
+        return "https://maps.google.com/?q=Huckleberry+Farm+Heathfield+Oxford+OX5"
 
 # --- DEFINE ADMIN PAGES ---
 def page_dashboard():
@@ -372,8 +381,9 @@ def page_client_portal():
         </div>
     """, unsafe_allow_html=True)
     
-    client_tab_book, client_tab_herd, client_tab_waitlist, client_tab_profile = st.tabs([
+    client_tab_book, client_tab_feedback, client_tab_herd, client_tab_waitlist, client_tab_profile = st.tabs([
         "✨ Book an Experience", 
+        "🌟 Ride & Feedback",
         "🥕 Meet Our Herd", 
         "⏳ Waiting List", 
         "👤 My Token Balance"
@@ -456,6 +466,65 @@ def page_client_portal():
                         
                     st.balloons()
                     st.success(f"✨ Booking confirmed! You have been successfully matched with: **{assigned_pony}**.")
+
+    with client_tab_feedback:
+        st.subheader("🌟 Your Matched Rides & Memory Log")
+        st.write("Review your upcoming or past confirmed bookings, check yard details with Google Maps, and share your feedback!")
+        
+        confirmed_bookings = st.session_state.bookings[st.session_state.bookings['Status'] == "Confirmed"]
+        
+        if confirmed_bookings.empty:
+            st.info("No confirmed bookings found to display.")
+        else:
+            for _, b_row in confirmed_bookings.iterrows():
+                details = str(b_row['Details'])
+                pony_matched = "Pony"
+                for p_name in st.session_state.ponies['Pony'].tolist():
+                    if p_name.lower() in details.lower():
+                        pony_matched = p_name
+                        break
+                
+                img_path = get_pony_image_path(pony_matched)
+                map_url = get_yard_map_link(b_row['Location'])
+                
+                col_p_img, col_p_details = st.columns([1, 2.5])
+                with col_p_img:
+                    if img_path:
+                        st.image(img_path, use_container_width=True)
+                    else:
+                        st.markdown("""
+                            <div style="background-color: #E2E8F0; padding: 45px 10px; border-radius: 12px; text-align: center; color: #718096; font-size: 0.8rem; border: 1px dashed #CBD5E1;">
+                                🐎 Matched Mount
+                            </div>
+                        """, unsafe_allow_html=True)
+                        
+                with col_p_details:
+                    st.markdown(f"""
+                        <div style="background: white; padding: 20px; border-radius: 14px; border: 1px solid #EAEFE5; box-shadow: 0 4px 15px rgba(0,0,0,0.02); margin-bottom: 15px;">
+                            <h4 style="margin-top:0; font-family: 'Playfair Display', serif; color: #2C4A3E;">✨ Matched with: {pony_matched}</h4>
+                            <p style="margin: 4px 0;"><b>Activity:</b> {b_row['Activity']}</p>
+                            <p style="margin: 4px 0;"><b>Details:</b> {b_row['Details']}</p>
+                            <p style="margin: 4px 0;"><b>Date & Time:</b> {b_row['Date']} at {b_row['Time']}</p>
+                            <p style="margin: 4px 0;"><b>Location:</b> {b_row['Location']}</p>
+                            <div style="margin-top: 10px;">
+                                <a href="{map_url}" target="_blank" style="background-color: #2C4A3E; color: white; padding: 6px 14px; border-radius: 8px; text-decoration: none; font-size: 0.85rem; font-weight: 500; display: inline-block;">📍 Open Yard in Google Maps</a>
+                            </div>
+                        </div>
+                    """, unsafe_allow_html=True)
+            
+            st.markdown("---")
+            st.markdown("#### 💌 Leave Feedback on Your Session")
+            with st.form("client_feedback_form"):
+                fb_rider = st.text_input("Your Name / Rider Name")
+                fb_pony = st.selectbox("Pony You Ridden", st.session_state.ponies[~st.session_state.ponies['Status'].str.contains('Memory')]['Pony'].tolist())
+                fb_rating = st.select_slider("Experience Rating", options=["⭐⭐⭐⭐⭐ (Exceptional)", "⭐⭐⭐⭐ (Wonderful)", "⭐⭐⭐ (Good)", "⭐⭐ (Fair)", "⭐ (Needs Improvement)"], value="⭐⭐⭐⭐⭐ (Exceptional)")
+                fb_comments = st.text_area("Share your experience or comments about your ride:")
+                
+                submitted_fb = st.form_submit_button("Submit Review & Memories")
+                if submitted_fb and fb_rider:
+                    new_fb = pd.DataFrame([{"Rider": fb_rider, "Pony": fb_pony, "Rating": fb_rating, "Comments": fb_comments, "Date": str(datetime.date.today())}])
+                    st.session_state.feedback_submissions = pd.concat([st.session_state.feedback_submissions, new_fb], ignore_index=True)
+                    st.success("✨ Thank you! Your feedback has been securely shared with Charlotte and the team.")
 
     with client_tab_herd:
         st.subheader("🥕 Meet Our Herd & Fond Memories")
