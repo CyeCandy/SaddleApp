@@ -14,8 +14,9 @@ st.set_page_config(
 # --- PROMINENT BRANDING & SIDEBAR LOGO SETUP ---
 with st.sidebar:
     st.markdown("""
-        <div style="background-color: #FFFFFF; padding: 12px; border-radius: 12px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 10px;">
-            <p style="font-size: 0.85rem; font-weight: bold; color: #2C3E50; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;">Pony Pursuits</p>
+        <div style="background-color: #FFFFFF; padding: 14px; border-radius: 14px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.03); margin-bottom: 12px; border: 1px solid #EAEFE5;">
+            <p style="font-size: 0.85rem; font-weight: 700; color: #1A252C; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 1.5px;">Pony Pursuits</p>
+            <p style="font-size: 0.7rem; color: #555; margin: 0;">5-Star Licensed Equestrian Centre</p>
         </div>
     """, unsafe_allow_html=True)
     try:
@@ -24,21 +25,73 @@ with st.sidebar:
         st.info("🐎 Pony Pursuits Portal")
     st.divider()
 
-# --- CUSTOM CSS FOR WARM, INVITING UI ---
+# --- CUSTOM CSS FOR HIGH-END BOUTIQUE EQUINE UI ---
 st.markdown("""
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
-        .stApp { background-color: #F4F6F0; }
-        [data-testid="stSidebar"] { background-color: #FFFFFF; border-right: 1px solid #E2E8F0; }
-        h1, h2, h3 { color: #2C3E50; font-family: 'Helvetica Neue', sans-serif; }
-        [data-testid="stMetricValue"] { font-size: 2.2rem; color: #27AE60; }
+        /* Global Font & Background Overhaul */
+        .stApp { 
+            background-color: #F7F8F5; 
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
         
-        .activity-card {
+        [data-testid="stSidebar"] { 
+            background-color: #FFFFFF; 
+            border-right: 1px solid #EBEFE6; 
+        }
+
+        /* Editorial Headings */
+        h1, h2, h3 { 
+            font-family: 'Playfair Display', serif !important;
+            color: #1A252C !important;
+            letter-spacing: -0.5px;
+        }
+
+        /* High-End Metric Cards */
+        [data-testid="stMetric"] {
             background-color: #FFFFFF;
             padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            margin-bottom: 15px;
-            border-left: 5px solid #27AE60;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.03);
+            border: 1px solid #EAEFE5;
+        }
+        [data-testid="stMetricValue"] { 
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem !important; 
+            color: #2C4A3E !important; 
+        }
+
+        /* Luxurious Activity Cards */
+        .activity-card {
+            background-color: #FFFFFF;
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 12px 35px -10px rgba(0,0,0,0.04);
+            margin-bottom: 20px;
+            border: 1px solid #EAEFE5;
+            border-left: 4px solid #2C4A3E;
+            transition: transform 0.2s ease;
+        }
+        .activity-card:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Polished Buttons */
+        .stButton > button {
+            border-radius: 12px !important;
+            font-weight: 500 !important;
+            letter-spacing: 0.3px;
+            border: 1px solid #D8E2D0 !important;
+            transition: all 0.2s ease-in-out;
+        }
+        
+        /* Form container polish */
+        [data-testid="stForm"] {
+            background-color: #FFFFFF;
+            padding: 28px;
+            border-radius: 20px;
+            box-shadow: 0 15px 40px -10px rgba(0,0,0,0.03);
+            border: 1px solid #EAEFE5;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -46,26 +99,26 @@ st.markdown("""
 # --- INITIALIZE SESSION STATE ---
 if "bookings" not in st.session_state:
     st.session_state.bookings = pd.DataFrame([
-        {"Location": "Huckleberry Farm (Heathfield, OX5)", "Date": "2026-04-02", "Time": "10:00 AM", "Activity": "Ride & Groom Session", "Details": "Teddy (Rider: Leo M.)", "Status": "Confirmed"},
-        {"Location": "Huckleberry Farm (Heathfield, OX5)", "Date": "2026-04-02", "Time": "1:00 PM", "Activity": "Pony Therapy & Play", "Details": "Jubilee (Rider: Chloe S.)", "Status": "Confirmed"},
-        {"Location": "Sandy Lane (Horspath, OX33)", "Date": "2026-04-03", "Time": "2:30 PM", "Activity": "Shotover Woodland Hack", "Details": "Spice (Rider: The Harrison Family)", "Status": "Confirmed"}
+        {"Location": "Huckleberry Farm (Heathfield, OX5)", "Date": "2026-04-02", "Time": "10:00 AM", "Activity": "Adult Private Flatwork", "Details": "Jubilee (Rider: Charlotte V.)", "Status": "Confirmed"},
+        {"Location": "Huckleberry Farm (Heathfield, OX5)", "Date": "2026-04-02", "Time": "1:00 PM", "Activity": "Pony Therapy & Groundwork", "Details": "Teddy (Rider: Chloe S.)", "Status": "Confirmed"},
+        {"Location": "Sandy Lane (Horspath, OX33)", "Date": "2026-04-03", "Time": "2:30 PM", "Activity": "Shotover Advanced Hack", "Details": "Spice (Rider: The Harrison Family)", "Status": "Confirmed"}
     ])
 
 if "ponies" not in st.session_state:
     st.session_state.ponies = pd.DataFrame([
-        {"Pony": "Jubilee", "Breed": "Gypsy Cob", "Current_Yard": "Huckleberry Farm", "Max_Weight_kg": 90, "Status": "Active (🟢)", "Notes": "Great weight carrier for adults, calm & kind 🌳"},
-        {"Pony": "Teddy", "Breed": "Welsh Cross", "Current_Yard": "Huckleberry Farm", "Max_Weight_kg": 55, "Status": "Active (🟢)", "Notes": "Cuddly painting pony, loves humans 🤗"},
-        {"Pony": "Spice", "Breed": "Gypsy Cob", "Current_Yard": "Sandy Lane", "Max_Weight_kg": 80, "Status": "Active (🟢)", "Notes": "Blue roan, ideal for woodland hacks 🌲"},
+        {"Pony": "Jubilee", "Breed": "Gypsy Cob", "Current_Yard": "Huckleberry Farm", "Max_Weight_kg": 90, "Status": "Active (🟢)", "Notes": "Exceptional weight carrier for adult riders, calm & responsive 🌳"},
+        {"Pony": "Teddy", "Breed": "Welsh Cross", "Current_Yard": "Huckleberry Farm", "Max_Weight_kg": 55, "Status": "Active (🟢)", "Notes": "Cuddly companion pony, wonderful for therapy work 🤗"},
+        {"Pony": "Spice", "Breed": "Gypsy Cob", "Current_Yard": "Sandy Lane", "Max_Weight_kg": 80, "Status": "Active (🟢)", "Notes": "Blue roan, ideal for confident woodland hacks 🌲"},
         {"Pony": "Prince", "Breed": "Mini Cob", "Current_Yard": "Sandy Lane", "Max_Weight_kg": 45, "Status": "Active (🟢)", "Notes": "Trained to ride & drive 🐎"},
         {"Pony": "Milkshake", "Breed": "Mini Cob", "Current_Yard": "Huckleberry Farm", "Max_Weight_kg": 50, "Status": "Active (🟡)", "Notes": "Friendly riding pony 🍦"},
-        {"Pony": "Spirit", "Breed": "Mini Cob", "Current_Yard": "Huckleberry Farm", "Max_Weight_kg": 50, "Status": "Active (🟢)", "Notes": "Blagdon pony, great for youngsters ✨"},
+        {"Pony": "Spirit", "Breed": "Mini Cob", "Current_Yard": "Huckleberry Farm", "Max_Weight_kg": 50, "Status": "Active (🟢)", "Notes": "Blagdon pony, great for younger riders ✨"},
         {"Pony": "Sam", "Breed": "Shetland", "Current_Yard": "Huckleberry Farm", "Max_Weight_kg": 25, "Status": "Retired (⚪)", "Notes": "Elder statesman in well-earned retirement 🥕"}
     ])
 
 if "clients" not in st.session_state:
     st.session_state.clients = pd.DataFrame([
         {"Client": "The Harrison Family", "Riders": 3, "Credits_Remaining": 4, "Email": "harrison@example.com", "Medical_Notes": "None declared"},
-        {"Client": "Sarah Jenkins", "Riders": 1, "Credits_Remaining": 2, "Email": "sarah@example.com", "Medical_Notes": "Mild allergy to stable dust"}
+        {"Client": "Charlotte Vance", "Riders": 1, "Credits_Remaining": 6, "Email": "charlotte@example.com", "Medical_Notes": "None declared"}
     ])
 
 if "waitlist" not in st.session_state:
@@ -104,8 +157,8 @@ def get_pony_image_path(pony_name):
 
 # --- DEFINE ADMIN PAGES ---
 def page_dashboard():
-    st.title("Welcome back, Charlotte! 🌟")
-    st.caption("5-Star Licensed Centre Management • Click any metric card below to filter the data instantly")
+    st.title("Welcome back, Charlotte 🌟")
+    st.caption("5-Star Licensed Centre Management • Click any metric card below to filter data instantly")
     st.divider()
     
     col1, col2, col3, col4 = st.columns(4)
@@ -202,7 +255,7 @@ def page_schedule():
             e_loc = st.selectbox("Location", ["Huckleberry Farm (Heathfield, OX5)", "Sandy Lane (Horspath, OX33)"])
             e_date = st.date_input("Event Date")
             e_time = st.selectbox("Time Slot", ["10:00 AM", "11:30 AM", "1:00 PM", "2:30 PM", "4:00 PM"])
-            e_act = st.selectbox("Activity", ["Shotover Woodland Hack 🌲", "Ride & Groom Session 🐴", "Pony Therapy & Play 🐾", "Private Lesson ⭐"])
+            e_act = st.selectbox("Activity", ["Shotover Advanced Hack 🌲", "Adult Private Flatwork ⭐", "Ride & Groom Session 🐴", "Pony Therapy & Play 🐾"])
             
             active_ponies = st.session_state.ponies[~st.session_state.ponies['Status'].str.contains('Retired')]['Pony'].tolist()
             e_pony = st.selectbox("Assign Specific Pony", active_ponies)
@@ -311,56 +364,56 @@ def page_clients():
 # --- CLIENT PORTAL ---
 def page_client_portal():
     st.markdown("""
-        <div style="background: linear-gradient(135deg, #27AE60, #2ECC71); padding: 30px; border-radius: 15px; color: white; text-align: center; margin-bottom: 25px;">
-            <h1>🐎 Welcome to Pony Pursuits!</h1>
-            <p style="font-size: 1.2rem; margin-top: 5px;">Inclusive, friendly riding & outdoor adventures in Oxfordshire. No elitism, just pure fun with horses! 🌳✨</p>
+        <div style="background: linear-gradient(135deg, #2C4A3E, #3D6B56); padding: 35px; border-radius: 18px; color: white; text-align: center; margin-bottom: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.08);">
+            <h1 style="color: white !important; font-size: 2.4rem; margin-bottom: 8px;">Pony Pursuits</h1>
+            <p style="font-size: 1.15rem; opacity: 0.95; max-weight: 400; margin: 0;">Boutique Equestrian Experiences & Woodland Hacks in Oxfordshire</p>
         </div>
     """, unsafe_allow_html=True)
     
     client_tab_book, client_tab_herd, client_tab_waitlist, client_tab_profile = st.tabs([
-        "✨ Book an Adventure", 
-        "🥕 Meet Our Ponies", 
+        "✨ Book an Experience", 
+        "🥕 Meet Our Herd", 
         "⏳ Waiting List", 
         "👤 My Token Balance"
     ])
     
     with client_tab_book:
-        st.subheader("Choose Your Experience & Ride!")
-        st.write("Fill in your details below to find your perfect equine match and book your session instantly.")
+        st.subheader("Select Your Experience")
+        st.write("Tailored sessions for adult riders, families, and enthusiasts across our two distinct Oxfordshire yards.")
         
         col_c1, col_c2 = st.columns(2)
         with col_c1:
             st.markdown("""
                 <div class="activity-card">
-                    <h4>🌲 Shotover Woodland Hacks</h4>
-                    <p>Explore the stunning trails around Shotover Country Park from our Sandy Lane yard (OX33). Perfect for refreshing outdoor hacks!</p>
+                    <h4>🌲 Shotover Advanced & Scenic Hacks</h4>
+                    <p>Explore the stunning trails around Shotover Country Park from our Sandy Lane yard (OX33). Designed for enjoyable hacks through varied terrain.</p>
                 </div>
             """, unsafe_allow_html=True)
         with col_c2:
             st.markdown("""
                 <div class="activity-card">
-                    <h4>🧸 Ride & Groom / Pony Therapy</h4>
-                    <p>Based at Huckleberry Farm (OX5). Get hands-on with brushing, pampering, and bonding with our friendly, calm herd.</p>
+                    <h4>⭐ Adult Private Flatwork & Groundwork</h4>
+                    <p>Based at Huckleberry Farm (OX5). Refine your riding skills, build partnership, or enjoy restorative time with our seasoned cobs.</p>
                 </div>
             """, unsafe_allow_html=True)
             
         st.markdown("---")
         
         with st.form("fun_client_booking_form"):
-            st.markdown("### 📝 Quick Booking Form")
+            st.markdown("### 📝 Secure Booking Form")
             f_col1, f_col2 = st.columns(2)
             with f_col1:
-                c_name = st.text_input("Your Family / Rider Name")
-                c_email = st.text_input("Your Email Address")
-                c_weight = st.number_input("Rider Weight (kg) [For safe pony matching]", min_value=20, max_value=110, value=50)
+                c_name = st.text_input("Rider / Family Name")
+                c_email = st.text_input("Account Email Address")
+                c_weight = st.number_input("Rider Weight (kg) [For safe equine weight matching]", min_value=30, max_value=110, value=65)
             with f_col2:
-                c_location = st.selectbox("Choose Your Location", ["Huckleberry Farm (Heathfield, OX5)", "Sandy Lane (Horspath, OX33)"])
-                c_activity = st.selectbox("Choose Your Activity", ["Shotover Woodland Hack 🌲", "Ride & Groom Session 🐴", "Pony Therapy & Play 🐾", "Private Lesson ⭐"])
-                c_date = st.date_input("Pick a Date")
-                c_time = st.selectbox("Pick a Time Slot", ["10:00 AM", "11:30 AM", "1:00 PM", "2:30 PM", "4:00 PM"])
+                c_location = st.selectbox("Choose Yard Location", ["Huckleberry Farm (Heathfield, OX5)", "Sandy Lane (Horspath, OX33)"])
+                c_activity = st.selectbox("Choose Activity", ["Shotover Advanced Hack 🌲", "Adult Private Flatwork ⭐", "Ride & Groom Session 🐴", "Pony Therapy & Play 🐾"])
+                c_date = st.date_input("Select Date")
+                c_time = st.selectbox("Select Time Slot", ["10:00 AM", "11:30 AM", "1:00 PM", "2:30 PM", "4:00 PM"])
             
             st.markdown("")
-            submit_booking = st.form_submit_button("🎉 Book My Pony Adventure Now!", use_container_width=True)
+            submit_booking = st.form_submit_button("Confirm Booking & Allocate Mount", use_container_width=True)
             
             if submit_booking and c_name:
                 date_str = c_date.strftime("%Y-%m-%d")
@@ -369,7 +422,7 @@ def page_client_portal():
                 if not client_row.empty:
                     tokens_left = int(client_row['Credits_Remaining'].values[0])
                     if tokens_left <= 0:
-                        st.error("⚠️ You have 0 token pack credits left. Please top up your account to book!")
+                        st.error("⚠️ You have 0 token pack credits remaining. Please top up your package to book.")
                         return
                 
                 active_herd = st.session_state.ponies[~st.session_state.ponies['Status'].str.contains('Retired')]
@@ -381,12 +434,12 @@ def page_client_portal():
                         available_ponies.append(p_row['Pony'])
                 
                 if weight_matched.empty:
-                    st.error("❌ Oops! We couldn't find a working pony that matches this weight requirement safely. Please reach out to us directly!")
+                    st.error("❌ We could not locate an active mount matching this weight requirement safely. Please contact the yard directly.")
                 elif not available_ponies:
-                    st.warning("⚠️ All suitable weight-matched ponies are already booked for this exact slot. Would you like to join our waiting list?")
+                    st.warning("⚠️ All suitable weight-matched mounts are currently reserved for this slot. Would you like to join our waiting list?")
                     new_wait = pd.DataFrame([{"Client_Name": c_name, "Date": date_str, "Time": c_time, "Activity": c_activity, "Weight_kg": c_weight, "Requested_At": str(datetime.date.today())}])
                     st.session_state.waitlist = pd.concat([st.session_state.waitlist, new_wait], ignore_index=True)
-                    st.info("📋 Added to the waiting list! We'll notify you if a space opens up.")
+                    st.info("📋 Added to the waiting list. We will notify you promptly if a space opens.")
                 else:
                     assigned_pony = available_ponies[0]
                     new_booking = pd.DataFrame([{
@@ -400,11 +453,11 @@ def page_client_portal():
                         st.session_state.clients.loc[idx, 'Credits_Remaining'] -= 1
                         
                     st.balloons()
-                    st.success(f"🥳 Hooray {c_name}! Your booking is confirmed. You've been magically matched with our wonderful pony: **{assigned_pony}**!")
+                    st.success(f"✨ Booking confirmed! You have been successfully matched with: **{assigned_pony}**.")
 
     with client_tab_herd:
-        st.subheader("🥕 Meet the Wonderful Pony Pursuits Family!")
-        st.write("Get to know the lovely characters you or your children will meet at our yards:")
+        st.subheader("🥕 Meet Our Licensed Herd")
+        st.write("Professional, well-schooled companions suited to a wide range of rider capabilities:")
         
         for _, p in st.session_state.ponies.iterrows():
             col_img, col_info = st.columns([1, 3])
@@ -415,41 +468,41 @@ def page_client_portal():
                     st.image(img_path, use_container_width=True)
                 else:
                     st.markdown("""
-                        <div style="background-color: #E2E8F0; padding: 30px 10px; border-radius: 8px; text-align: center; color: #718096; font-size: 0.85rem;">
-                            📷 No Photo Found
+                        <div style="background-color: #E2E8F0; padding: 35px 10px; border-radius: 10px; text-align: center; color: #718096; font-size: 0.8rem; border: 1px dashed #CBD5E1;">
+                            📷 Photo Pending
                         </div>
                     """, unsafe_allow_html=True)
                     
             with col_info:
                 st.markdown(f"""
-                    <div style="background: white; padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 4px solid #3498DB;">
-                        <h4>🐎 {p['Pony']} ({p['Breed']}) — <span style="font-size: 0.9rem; color: #555;">Based at {p['Current_Yard']}</span></h4>
-                        <p style="margin: 2px 0;"><b>Status:</b> {p['Status']} | <b>Weight Limit:</b> Up to {p['Max_Weight_kg']} kg</p>
-                        <p style="margin: 2px 0; color: #666;"><i>{p['Notes']}</i></p>
+                    <div style="background: white; padding: 18px; border-radius: 14px; margin-bottom: 12px; border: 1px solid #EAEFE5; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
+                        <h4 style="margin-top: 0; font-family: 'Playfair Display', serif; color: #1A252C;">🐎 {p['Pony']} <span style="font-size: 0.9rem; font-weight: normal; color: #666;">({p['Breed']}) — Based at {p['Current_Yard']}</span></h4>
+                        <p style="margin: 4px 0; font-size: 0.9rem;"><b>Status:</b> {p['Status']} &nbsp;|&nbsp; <b>Weight Capacity:</b> Up to {p['Max_Weight_kg']} kg</p>
+                        <p style="margin: 4px 0; font-size: 0.9rem; color: #555;"><i>{p['Notes']}</i></p>
                     </div>
                 """, unsafe_allow_html=True)
 
     with client_tab_waitlist:
-        st.subheader("⏳ Your Waiting List Queue")
-        st.write("Checking for openings when sessions are fully booked.")
+        st.subheader("⏳ Waiting List Status")
+        st.write("Active queue for fully booked time slots.")
         if st.session_state.waitlist.empty:
-            st.info("You don't have any active waiting list requests right now.")
+            st.info("You do not have any active waiting list requests.")
         else:
             st.dataframe(st.session_state.waitlist, use_container_width=True)
 
     with client_tab_profile:
-        st.subheader("👤 My Rider Profile & Token Credits")
-        lookup_email = st.text_input("Enter your account email to view your tokens:")
+        st.subheader("👤 Client Profile & Token Ledger")
+        lookup_email = st.text_input("Enter your registered account email to view token packs:")
         if lookup_email:
             match = st.session_state.clients[st.session_state.clients['Email'].str.contains(lookup_email, case=False, na=False)]
             if not match.empty:
                 for _, row in match.iterrows():
-                    st.success(f"Welcome back, {row['Client']}! 👋")
-                    st.metric(label="Your Remaining Token Pack Credits", value=f"{row['Credits_Remaining']} Tokens 🪙")
-                    st.write(f"**Registered Riders on Account:** {row['Riders']}")
-                    st.write(f"**Medical / Care Notes:** {row['Medical_Notes']}")
+                    st.success(f"Welcome back, {row['Client']} 👋")
+                    st.metric(label="Remaining Token Pack Credits", value=f"{row['Credits_Remaining']} Tokens 🪙")
+                    st.write(f"**Associated Riders:** {row['Riders']}")
+                    st.write(f"**Medical / Dietary Notes:** {row['Medical_Notes']}")
             else:
-                st.warning("We couldn't find an account matching that email address. Let us know at the yard and we'll get you set up!")
+                st.warning("No account found matching this email address. Please speak with us at the yard.")
 
 # --- NAVIGATION ROUTING ---
 admin_pages = [
