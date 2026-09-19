@@ -11,7 +11,6 @@ st.set_page_config(
 )
 
 # --- BRANDING & SIDEBAR LOGO ---
-# st.logo places your image file at the top of the native navigation sidebar
 st.logo("logo.jpg")
 
 # --- CUSTOM CSS FOR BRANDING ---
@@ -62,6 +61,15 @@ if "welfare_schedule" not in st.session_state:
         {"Pony": "Spice", "Event": "Vaccination Booster", "Due_Date": "2026-05-01", "Status": "Booked"}
     ])
 
+# --- HELPER FUNCTION: CHECK PONY CONFLICTS ---
+def is_pony_booked(pony_name, date_str, time_str):
+    """Checks if a given pony is already booked on a specific date and time slot."""
+    for _, row in st.session_state.bookings.iterrows():
+        if row['Date'] == date_str and row['Time'] == time_str:
+            if pony_name.lower() in str(row['Details']).lower():
+                return True
+    return False
+
 # --- DEFINE PAGE FUNCTIONS ---
 def page_dashboard():
     st.title("Welcome back, Charlotte!")
@@ -88,18 +96,28 @@ def page_schedule():
         df_b = df_b[df_b['Location'] == location_filter]
     st.dataframe(df_b, use_container_width=True)
 
-    with st.expander("➕ Create New Admin Event / Booking"):
+    with st.expander("➕ Create New Admin Event / Booking (With Anti-Double Booking Validation)"):
         with st.form("admin_event_form"):
             e_loc = st.selectbox("Location", ["Huckleberry Farm (Heathfield)", "Sandy Lane (Horspath)"])
             e_date = st.date_input("Event Date")
-            e_time = st.text_input("Time Slot", "2:00 PM")
+            e_time = st.selectbox("Time Slot", ["10:00 AM", "11:30 AM", "1:00 PM", "2:30 PM", "4:00 PM"])
             e_act = st.selectbox("Activity", ["Woodland Hack", "Ride & Groom", "Pony Therapy", "Private Lesson"])
-            e_det = st.text_input("Details / Assigned Pony & Rider")
-            if st.form_submit_button("Publish Event"):
-                new_evt = pd.DataFrame([{"Location": e_loc, "Date": e_date.strftime("%Y-%m-%d"), "Time": e_time, "Activity": e_act, "Details": e_det}])
-                st.session_state.bookings = pd.concat([st.session_state.bookings, new_evt], ignore_index=True)
-                st.success("Event added to master schedule!")
-                st.rerun()
+            
+            active_ponies = st.session_state.ponies[~st.session_state.ponies['Status'].str.contains('Retired')]['Pony'].tolist()
+            e_pony = st.selectbox("Assign Specific Pony", active_ponies)
+            e_rider = st.text_input("Rider / Participant Name")
+            
+            submitted = st.form_submit_button("Publish Event")
+            if submitted:
+                date_str = e_date.strftime("%Y-%m-%d")
+                if is_pony_booked(e_pony, date_str, e_time):
+                    st.error(f"❌ Double-booking conflict: **{e_pony}** is already booked for a session on {date_str} at {e_time}. Choose another time or pony.")
+                else:
+                    details_str = f"{e_pony} (Rider: {e_rider if e_rider else 'General Event'})"
+                    new_evt = pd.DataFrame([{"Location": e_loc, "Date": date_str, "Time": e_time, "Activity": e_act, "Details": details_str}])
+                    st.session_state.bookings = pd.concat([st.session_state.bookings, new_evt], ignore_index=True)
+                    st.success(f"✅ Event added successfully! **{e_pony}** scheduled securely without conflicts.")
+                    st.rerun()
 
 def page_ponies():
     st.subheader("Complete Herd Rota & Profile Editor")
@@ -189,33 +207,46 @@ def page_clients():
 def page_client_portal():
     st.markdown("### 🐎 Pony Pursuits | Client Portal")
     st.title("Welcome to your Rider Dashboard!")
-    st.write("Book sessions with safety weight-matching, check credit packs, and manage your rider profiles.")
+    st.write("Book sessions with automated weight-matching and strict anti-double booking protection.")
     st.divider()
     
     client_tab_book, client_tab_profile = st.tabs(["📅 Book with Safety Match", "👤 My Credits & Profile"])
     with client_tab_book:
-        st.subheader("Frictionless Booking & License Safety Check")
+        st.subheader("Frictionless Booking & Conflict Engine")
         with st.form("client_booking_form"):
             c_name = st.text_input("Rider / Family Name")
             c_weight = st.number_input("Rider Weight (kg)", min_value=20, max_value=110, value=55)
             c_location = st.selectbox("Select Location", ["Huckleberry Farm (Heathfield)", "Sandy Lane (Horspath)"])
             c_activity = st.selectbox("Select Activity", ["Shotover Woodland Hack", "Ride & Groom Session", "Pony Therapy Provision"])
             c_date = st.date_input("Preferred Date")
-            c_time = st.selectbox("Preferred Time Slot", ["10:00 AM", "11:30 AM", "1:00 PM", "2:30 PM"])
+            c_time = st.selectbox("Preferred Time Slot", ["10:00 AM", "11:30 AM", "1:00 PM", "2:30 PM", "4:00 PM"])
             
             if st.form_submit_button("Submit Booking Request") and c_name:
+                date_str = c_date.strftime("%Y-%m-%d")
+                
+                # Filter active working ponies meeting weight requirement
                 active_herd = st.session_state.ponies[~st.session_state.ponies['Status'].str.contains('Retired')]
-                valid_ponies = active_herd[active_herd['Max_Weight_kg'] >= c_weight]
-                if valid_ponies.empty:
+                weight_matched = active_herd[active_herd['Max_Weight_kg'] >= c_weight]
+                
+                # Filter out ponies already booked in this exact time slot
+                available_ponies = []
+                for _, p_row in weight_matched.iterrows():
+                    if not is_pony_booked(p_row['Pony'], date_str, c_time):
+                        available_ponies.append(p_row['Pony'])
+                
+                if weight_matched.empty:
                     st.error("❌ Weight check error: No available working ponies match this weight specification safely.")
+                elif not available_ponies:
+                    st.error(f"❌ Schedule conflict: All suitable weight-matched ponies are already booked for {date_str} at {c_time}. Please select an alternative time slot.")
                 else:
-                    assigned_pony = valid_ponies.iloc[0]['Pony']
+                    # Automatically assign the first available conflict-free pony
+                    assigned_pony = available_ponies[0]
                     new_booking = pd.DataFrame([{
-                        "Location": c_location, "Date": c_date.strftime("%Y-%m-%d"),
+                        "Location": c_location, "Date": date_str,
                         "Time": c_time, "Activity": c_activity, "Details": f"{assigned_pony} (Rider: {c_name})"
                     }])
                     st.session_state.bookings = pd.concat([st.session_state.bookings, new_booking], ignore_index=True)
-                    st.success(f"✅ Success, {c_name}! Booked into {c_activity}. Matched with safe mount: **{assigned_pony}**.")
+                    st.success(f"✅ Success, {c_name}! Booked into {c_activity}. Matched with resting, safe mount: **{assigned_pony}**.")
 
     with client_tab_profile:
         st.subheader("Your Account & Token Pack Balance")
