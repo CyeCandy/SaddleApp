@@ -11,7 +11,6 @@ st.set_page_config(
 )
 
 # --- PROMINENT BRANDING & SIDEBAR LOGO SETUP ---
-# We use a custom container in the sidebar to make the logo clean, crisp, and high-visibility
 with st.sidebar:
     st.markdown("""
         <div style="background-color: #FFFFFF; padding: 12px; border-radius: 12px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 10px;">
@@ -32,7 +31,6 @@ st.markdown("""
         h1, h2, h3 { color: #2C3E50; font-family: 'Helvetica Neue', sans-serif; }
         [data-testid="stMetricValue"] { font-size: 2.2rem; color: #27AE60; }
         
-        /* Custom card styling for activities */
         .activity-card {
             background-color: #FFFFFF;
             padding: 20px;
@@ -85,6 +83,10 @@ if "welfare_schedule" not in st.session_state:
         {"Pony": "Spice", "Event": "Vaccination Booster", "Due_Date": "2026-05-01", "Status": "Booked"}
     ])
 
+# Session state tracker for active dashboard filters
+if "dashboard_view" not in st.session_state:
+    st.session_state.dashboard_view = "All Bookings"
+
 # --- HELPER FUNCTIONS ---
 def is_pony_booked(pony_name, date_str, time_str):
     for _, row in st.session_state.bookings.iterrows():
@@ -96,22 +98,89 @@ def is_pony_booked(pony_name, date_str, time_str):
 # --- DEFINE ADMIN PAGES ---
 def page_dashboard():
     st.title("Welcome back, Charlotte! 🌟")
-    st.caption("5-Star Licensed Centre Management • Huckleberry Farm & Sandy Lane")
+    st.caption("5-Star Licensed Centre Management • Click any metric card below to filter the data instantly")
     st.divider()
     
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         huck_count = len(st.session_state.bookings[(st.session_state.bookings['Location'].str.contains('Huckleberry')) & (st.session_state.bookings['Status'] == 'Confirmed')])
         st.metric(label="Huckleberry Farm", value=f"{huck_count} Booked", delta="OX5 Yard")
+        if st.button("🔍 Filter Huckleberry", use_container_width=True):
+            st.session_state.dashboard_view = "Huckleberry"
+            st.rerun()
+
     with col2:
         sandy_count = len(st.session_state.bookings[(st.session_state.bookings['Location'].str.contains('Sandy Lane')) & (st.session_state.bookings['Status'] == 'Confirmed')])
         st.metric(label="Sandy Lane / Shotover", value=f"{sandy_count} Booked", delta="OX33 Yard")
+        if st.button("🔍 Filter Sandy Lane", use_container_width=True):
+            st.session_state.dashboard_view = "Sandy Lane"
+            st.rerun()
+
     with col3:
         wait_count = len(st.session_state.waitlist)
         st.metric(label="Waiting List", value=f"{wait_count} Riders", delta="Queue Active")
+        if st.button("🔍 View Waitlist", use_container_width=True):
+            st.session_state.dashboard_view = "Waitlist"
+            st.rerun()
+
     with col4:
         working_ponies = len(st.session_state.ponies[~st.session_state.ponies['Status'].str.contains('Retired')])
         st.metric(label="Happy Herd", value=f"{working_ponies} Ready", delta="100% Fit")
+        if st.button("🔍 View Herd Rota", use_container_width=True):
+            st.session_state.dashboard_view = "Herd"
+            st.rerun()
+
+    st.markdown("---")
+    
+    # Dynamic view rendering based on user click
+    if st.session_state.dashboard_view == "Huckleberry":
+        col_head, col_btn = st.columns([4, 1])
+        with col_head:
+            st.subheader("📍 Filtered View: Huckleberry Farm Bookings")
+        with col_btn:
+            if st.button("🔄 Clear Filter"):
+                st.session_state.dashboard_view = "All Bookings"
+                st.rerun()
+        huck_df = st.session_state.bookings[st.session_state.bookings['Location'].str.contains("Huckleberry")]
+        st.dataframe(huck_df, use_container_width=True)
+
+    elif st.session_state.dashboard_view == "Sandy Lane":
+        col_head, col_btn = st.columns([4, 1])
+        with col_head:
+            st.subheader("📍 Filtered View: Sandy Lane / Shotover Bookings")
+        with col_btn:
+            if st.button("🔄 Clear Filter"):
+                st.session_state.dashboard_view = "All Bookings"
+                st.rerun()
+        sandy_df = st.session_state.bookings[st.session_state.bookings['Location'].str.contains("Sandy Lane")]
+        st.dataframe(sandy_df, use_container_width=True)
+
+    elif st.session_state.dashboard_view == "Waitlist":
+        col_head, col_btn = st.columns([4, 1])
+        with col_head:
+            st.subheader("⏳ Active Waiting List Queue")
+        with col_btn:
+            if st.button("🔄 Clear Filter"):
+                st.session_state.dashboard_view = "All Bookings"
+                st.rerun()
+        if st.session_state.waitlist.empty:
+            st.info("The waiting list is currently empty.")
+        else:
+            st.dataframe(st.session_state.waitlist, use_container_width=True)
+
+    elif st.session_state.dashboard_view == "Herd":
+        col_head, col_btn = st.columns([4, 1])
+        with col_head:
+            st.subheader("🗺️ Active Herd Rota & Status")
+        with col_btn:
+            if st.button("🔄 Clear Filter"):
+                st.session_state.dashboard_view = "All Bookings"
+                st.rerun()
+        st.dataframe(st.session_state.ponies, use_container_width=True)
+
+    else:
+        st.subheader("📅 All Confirmed Bookings Overview")
+        st.dataframe(st.session_state.bookings, use_container_width=True)
 
 def page_schedule():
     st.subheader("📅 Master Events & Booking Schedule")
