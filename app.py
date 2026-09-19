@@ -106,11 +106,13 @@ if "bookings" not in st.session_state:
 
 if "ponies" not in st.session_state:
     st.session_state.ponies = pd.DataFrame([
+        {"Pony": "Crackerjack", "Breed": "Welsh Cross", "Current_Yard": "Huckleberry Farm", "Max_Weight_kg": 60, "Status": "In Memory (🕊️)", "Notes": "Where Pony Pursuits started. A legendary versatile schoolmaster, deeply missed 🌟"},
+        {"Pony": "Bo Bo", "Breed": "Miniature Shetland", "Current_Yard": "Huckleberry Farm", "Max_Weight_kg": 25, "Status": "In Memory (🕊️)", "Notes": "Founding Pony Pursuits pony, grey roan character ❤️"},
         {"Pony": "Jubilee", "Breed": "Gypsy Cob", "Current_Yard": "Huckleberry Farm", "Max_Weight_kg": 90, "Status": "Active (🟢)", "Notes": "Exceptional weight carrier for adult riders, calm & responsive 🌳"},
         {"Pony": "Teddy", "Breed": "Welsh Cross", "Current_Yard": "Huckleberry Farm", "Max_Weight_kg": 55, "Status": "Active (🟢)", "Notes": "Cuddly companion pony, wonderful for therapy work 🤗"},
         {"Pony": "Spice", "Breed": "Gypsy Cob", "Current_Yard": "Sandy Lane", "Max_Weight_kg": 80, "Status": "Active (🟢)", "Notes": "Blue roan, ideal for confident woodland hacks 🌲"},
         {"Pony": "Prince", "Breed": "Mini Cob", "Current_Yard": "Sandy Lane", "Max_Weight_kg": 45, "Status": "Active (🟢)", "Notes": "Trained to ride & drive 🐎"},
-        {"Pony": "Milkshake", "Breed": "Mini Cob", "Current_Yard": "Huckleberry Farm", "Max_Weight_kg": 50, "Status": "Active (🟡)", "Notes": "Friendly riding pony 🍦"},
+        {"Pony": "Milkshake", "Breed": "Mini Cob", "Current_Yard": "Huckleberry Farm", "Max_Weight_kg": 50, "Status": "Active (🟡)", "Notes": "Friendly riding pony (Sunny's brother) 🍦"},
         {"Pony": "Spirit", "Breed": "Mini Cob", "Current_Yard": "Huckleberry Farm", "Max_Weight_kg": 50, "Status": "Active (🟢)", "Notes": "Blagdon pony, great for younger riders ✨"},
         {"Pony": "Sam", "Breed": "Shetland", "Current_Yard": "Huckleberry Farm", "Max_Weight_kg": 25, "Status": "Retired (⚪)", "Notes": "Elder statesman in well-earned retirement 🥕"}
     ])
@@ -184,7 +186,7 @@ def page_dashboard():
             st.rerun()
 
     with col4:
-        working_ponies = len(st.session_state.ponies[~st.session_state.ponies['Status'].str.contains('Retired')])
+        working_ponies = len(st.session_state.ponies[~st.session_state.ponies['Status'].str.contains('Retired|Memory')])
         st.metric(label="Happy Herd", value=f"{working_ponies} Ready", delta="100% Fit")
         if st.button("🔍 View Herd Rota", use_container_width=True):
             st.session_state.dashboard_view = "Herd"
@@ -257,7 +259,7 @@ def page_schedule():
             e_time = st.selectbox("Time Slot", ["10:00 AM", "11:30 AM", "1:00 PM", "2:30 PM", "4:00 PM"])
             e_act = st.selectbox("Activity", ["Shotover Advanced Hack 🌲", "Adult Private Flatwork ⭐", "Ride & Groom Session 🐴", "Pony Therapy & Play 🐾"])
             
-            active_ponies = st.session_state.ponies[~st.session_state.ponies['Status'].str.contains('Retired')]['Pony'].tolist()
+            active_ponies = st.session_state.ponies[~st.session_state.ponies['Status'].str.contains('Retired|Memory')]['Pony'].tolist()
             e_pony = st.selectbox("Assign Specific Pony", active_ponies)
             e_rider = st.text_input("Rider / Participant Name")
             
@@ -425,7 +427,7 @@ def page_client_portal():
                         st.error("⚠️ You have 0 token pack credits remaining. Please top up your package to book.")
                         return
                 
-                active_herd = st.session_state.ponies[~st.session_state.ponies['Status'].str.contains('Retired')]
+                active_herd = st.session_state.ponies[~st.session_state.ponies['Status'].str.contains('Retired|Memory')]
                 weight_matched = active_herd[active_herd['Max_Weight_kg'] >= c_weight]
                 
                 available_ponies = []
@@ -456,8 +458,8 @@ def page_client_portal():
                     st.success(f"✨ Booking confirmed! You have been successfully matched with: **{assigned_pony}**.")
 
     with client_tab_herd:
-        st.subheader("🥕 Meet Our Licensed Herd")
-        st.write("Professional, well-schooled companions suited to a wide range of rider capabilities:")
+        st.subheader("🥕 Meet Our Herd & Fond Memories")
+        st.write("Professional, well-schooled companions alongside tributes to where it all began:")
         
         for _, p in st.session_state.ponies.iterrows():
             col_img, col_info = st.columns([1, 3])
@@ -476,7 +478,7 @@ def page_client_portal():
             with col_info:
                 st.markdown(f"""
                     <div style="background: white; padding: 18px; border-radius: 14px; margin-bottom: 12px; border: 1px solid #EAEFE5; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
-                        <h4 style="margin-top: 0; font-family: 'Playfair Display', serif; color: #1A252C;">🐎 {p['Pony']} <span style="font-size: 0.9rem; font-weight: normal; color: #666;">({p['Breed']}) — Based at {p['Current_Yard']}</span></h4>
+                        <h4 style="margin-top: 0; font-family: 'Playfair Display', serif; color: #1A252C;">🐎 {p['Pony']} <span style="font-size: 0.9rem; font-weight: normal; color: #666;">({p['Breed']}) — Yard: {p['Current_Yard']}</span></h4>
                         <p style="margin: 4px 0; font-size: 0.9rem;"><b>Status:</b> {p['Status']} &nbsp;|&nbsp; <b>Weight Capacity:</b> Up to {p['Max_Weight_kg']} kg</p>
                         <p style="margin: 4px 0; font-size: 0.9rem; color: #555;"><i>{p['Notes']}</i></p>
                     </div>
